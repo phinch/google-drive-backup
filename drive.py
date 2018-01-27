@@ -5,6 +5,9 @@ Command-line application that retrieves the list of files in google drive.
 Usage:
     $ python drive.py
 
+NOTE: the flags are no longer functioning. For usage, run:
+    $ python drive.py [destination] [drive_id]
+
 You can also get help on all the command-line flags the program understands
 by running:
 
@@ -15,16 +18,16 @@ To get detailed log output run:
     $ python drive.py --logging_level=DEBUG
 """
 
-__author__ = 'viky.nandha@gmail.com (Vignesh Nandha Kumar)'
+__author__ = 'viky.nandha@gmail.com (Vignesh Nandha Kumar) (edits by Philip Hinch)'
 
-import gflags, httplib2, logging, os, pprint, sys, re, time
+import httplib2, logging, os, pprint, sys, re, time
+from absl import flags as gflags
 import pprint
 
 from apiclient.discovery import build
 from oauth2client.file import Storage
 from oauth2client.client import AccessTokenRefreshError, flow_from_clientsecrets
-from oauth2client.tools import run
-
+from oauth2client.tools import run_flow as run
 
 FLAGS = gflags.FLAGS
 
@@ -60,10 +63,10 @@ FLOW = flow_from_clientsecrets(CLIENT_SECRETS,
 gflags.DEFINE_enum('logging_level', 'ERROR',
                    ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                    'Set the level of logging detail.')
-gflags.DEFINE_string('destination', 'downloaded/', 'Destination folder location', short_name='d')
+gflags.DEFINE_string('destination', sys.argv[1], 'Destination folder location', short_name='d')
 gflags.DEFINE_boolean('debug', False, 'Log folder contents as being fetched' )
 gflags.DEFINE_string('logfile', 'drive.log', 'Location of file to write the log' )
-gflags.DEFINE_string('drive_id', 'root', 'ID of the folder whose contents are to be fetched' )
+gflags.DEFINE_string('drive_id', sys.argv[2], 'ID of the folder whose contents are to be fetched' )
 
 
 def open_logfile():
@@ -91,16 +94,32 @@ def is_file_modified(drive_file, local_file):
     else:
         return True
 
+# Note: some edits by Philip. Seems like it was previously only able to do 100 files
+# See https://developers.google.com/drive/v2/reference/files/list for reference
 def get_folder_contents( service, http, folder, base_path='./', depth=0 ):
-    if FLAGS.debug:
-        log( "\n" + '  ' * depth + "Getting contents of folder %s" % folder['title'] )
-    try:
-        folder_contents = service.files().list( q="'%s' in parents" % folder['id'] ).execute()
-    except:
-        log( "ERROR: Couldn't get contents of folder %s. Retrying..." % folder['title'] )
-        get_folder_contents( service, http, folder, base_path, depth )
-        return
-    folder_contents = folder_contents['items']
+    folder_contents = []
+    page_token = None
+    while True:
+        if FLAGS.debug:
+            log( "\n" + '  ' * depth + "Getting contents of folder %s" % folder['title'] )
+        try:
+            if page_token:
+                files = service.files().list(q="'%s' in parents" % folder['id'], pageToken = page_token).execute()
+            else:
+                files = service.files().list( q="'%s' in parents" % folder['id']).execute()
+        except:
+            log( "ERROR: Couldn't get contents of folder %s. Retrying..." % folder['title'] )
+            print( "ERROR: Couldn't get contents of folder %s. Retrying..." % folder['title'] )
+            break
+            get_folder_contents( service, http, folder, base_path, depth )
+            return
+      
+        folder_contents += files['items']
+        page_token = files.get('nextPageToken')
+        if not page_token:
+            break
+    
+    print "Found", len(folder_contents), "files"
     dest_path = base_path + folder['title'].replace( '/', '_' ) + '/'
 
     def is_file(item):
@@ -118,6 +137,7 @@ def get_folder_contents( service, http, folder, base_path='./', depth=0 ):
 
     ensure_dir( dest_path )
 
+    files_completed = 0
     for item in filter(is_file, folder_contents):
         full_path = dest_path + item['title'].replace( '/', '_' )
         if is_file_modified( item, full_path ):
@@ -129,6 +149,9 @@ def get_folder_contents( service, http, folder, base_path='./', depth=0 ):
                     log( "Updated %s" % full_path )
             else:
                 log( "ERROR while saving %s" % full_path )
+        files_completd += 1
+        if files_completed % 100 = 0:
+          print "approx", len(folder_contents) - files_completed, "files remaining"
 
     for item in filter(is_folder, folder_contents):
         get_folder_contents( service, http, item, dest_path, depth+1 )
@@ -180,7 +203,7 @@ def main(argv):
     # Let the gflags module process the command-line arguments
     try:
         argv = FLAGS(argv)
-    except gflags.FlagsError, e:
+    except gflags.IllegalFlagValueError, e:
         print '%s\\nUsage: %s ARGS\\n%s' % (e, argv[0], FLAGS)
         sys.exit(1)
 
