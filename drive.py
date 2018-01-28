@@ -149,8 +149,8 @@ def get_folder_contents( service, http, folder, base_path='./', depth=0 ):
                     log( "Updated %s" % full_path )
             else:
                 log( "ERROR while saving %s" % full_path )
-        files_completd += 1
-        if files_completed % 100 = 0:
+        files_completed += 1
+        if files_completed % 100 == 0:
           print "approx", len(folder_contents) - files_completed, "files remaining"
 
     for item in filter(is_folder, folder_contents):
