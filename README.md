@@ -3,7 +3,7 @@ Google Drive Backup
 
 A python script to sync your google drive contents.
 
-:warning: This repository is not actively maintained. Some of the [forks](https://github.com/vikynandha/google-drive-backup/network) might be more up-to-date.
+:warning: This repository is not maintained anymore. Some of the [forks](https://github.com/vikynandha/google-drive-backup/network) might be more up-to-date.
 
 ## Features
 * You can Download your entire google drive or any given folder
@@ -19,5 +19,16 @@ A python script to sync your google drive contents.
 ## Setup
 * Edit `client_secrets_sample.json` and add your Google API client id and client secret (If you don't have one, [get it here](https://code.google.com/apis/console/)).
 * Save it as `client_secrets.json`.
-* Now, if you run `python drive.py [destination] [drive_id]`, a browser window/tab will open for you to authenticate the script. If you wish to download the entire Google Drive, use `root` in place of `[drive_id]`; otherwise, a folder id can be provided.
+* Now, if you run `python drive.py`, a browser window/tab will open for you to authenticate the script.
 * Once authentication is done, the script will start downloading your *My Drive*. Refer the next section for more options.
+
+## Options
+Following command line options are available.
+
+**--destination** - Path to the folder where the files have to be downloaded to. If not specified, a folder named `downloaded` is created in the current directory.
+
+**--debug** - If present (accepts no value), every step will be logged to the log file.
+
+**--logfile** - Path to the file to which the logs should be written to. By default, writes to `drive.log` in the current directory. The file will be overwritten every time the script is run.
+
+**--drive_id** ID of the folder which you want to download. By default, entire "My Drive" is downloaded.

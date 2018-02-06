@@ -20,8 +20,7 @@ To get detailed log output run:
 
 __author__ = 'viky.nandha@gmail.com (Vignesh Nandha Kumar) (edits by Philip Hinch)'
 
-import httplib2, logging, os, pprint, sys, re, time
-from absl import flags as gflags
+import gflags, httplib2, logging, os, pprint, sys, re, time
 import pprint
 
 from apiclient.discovery import build
@@ -63,15 +62,13 @@ FLOW = flow_from_clientsecrets(CLIENT_SECRETS,
 gflags.DEFINE_enum('logging_level', 'ERROR',
                    ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                    'Set the level of logging detail.')
-gflags.DEFINE_string('destination', sys.argv[1], 'Destination folder location', short_name='d')
+gflags.DEFINE_string('destination', 'downloaded/', 'Destination folder location', short_name='d')
 gflags.DEFINE_boolean('debug', False, 'Log folder contents as being fetched' )
 gflags.DEFINE_string('logfile', 'drive.log', 'Location of file to write the log' )
-gflags.DEFINE_string('drive_id', sys.argv[2], 'ID of the folder whose contents are to be fetched' )
+gflags.DEFINE_string('drive_id', 'root', 'ID of the folder whose contents are to be fetched' )
 
 
 def open_logfile():
-    if not re.match( '^/', FLAGS.logfile ):
-        FLAGS.logfile = FLAGS.destination + FLAGS.logfile
     global LOG_FILE
     LOG_FILE = open( FLAGS.logfile, 'w+' )
 
